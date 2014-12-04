@@ -33,7 +33,6 @@ typedef struct
 	int size; //Contém tamanho da lista
 } CircularList;
 
-
 typedef struct
 {
 	enum { RR = 0, FIFO, SJF } algorithm;
@@ -44,6 +43,12 @@ typedef struct
 	} list;
 } ProcessScheduler;
 
+typedef struct
+{
+	int Clock;
+	Process *ExecProcess;
+} CPU;
+
 // ==================== METHODS ==========================
 
 // Inicialização
@@ -52,14 +57,26 @@ CircularList* newCircularList();
 
 // Manipulação de Node
 int addNode(List *L, Process *node);
-int removeNode(List *L, Process *node);
+int removeNode(List *L, Process *node, int useFree);
 
 int addNodeC(CircularList *L, Process *node);
-int removeNodeC(CircularList *L, Process *node);
+int removeNodeC(CircularList *L, Process *node, int useFree);
 Process* next(CircularList *L);
 
-void ReadFile(char *path);
+void LoadFile(char *path);
 void InitProgram();
 
 void addProcess(Process *p);
 void removeProcess(Process *p);
+
+Process* GetNextProcess();
+void SetCPUProcess(Process *p);
+void printProcesses();
+Process* newProcess();
+Process* GetCopy(Process p);
+
+
+void Clock();
+Process* DoFIFO();
+Process* DoSJF();
+Process* DoFIFO();

@@ -52,7 +52,7 @@ int addNode(List *L, Process *node)
 // ******  removeNode                       ******
 // ***********************************************
 // Remove um node da lista.
-int removeNode(List *L, Process *node)
+int removeNode(List *L, Process *node, int useFree)
 {
 	//Elemento NULL
 	if(!node) return 0;
@@ -84,7 +84,8 @@ int removeNode(List *L, Process *node)
 		L->size--;
 	}
 
-	free(node);
+	if(useFree) 
+		free(node);
 
 	return 1;
 }
@@ -113,7 +114,7 @@ CircularList* newCircularList()
 // ******  addNode                          ******
 // ***********************************************
 // Adiciona um node na lista.
-int addNodeC(CircularList *L, Process *node)
+int addNodeC(CircularList *L, Process *node, int useFree)
 {
 	// Verifica se o elemento passado é igual a NULL,
 	// se sim, não há necessidade de continuar.
@@ -147,6 +148,10 @@ int addNodeC(CircularList *L, Process *node)
 	}
 
 	L->size++;
+
+	
+	if(useFree) 
+		free(node);
 
 	return 1;
 }
@@ -189,7 +194,6 @@ int removeNodeC(CircularList *L, Process *node)
 		L->size--;
 	}
 
-	free(node);
 	return 1;
 }
 
@@ -197,4 +201,23 @@ Process* next(CircularList *L)
 {
 	L->head = L->head->next;
 	return L->head->previous;
+}
+
+Process* newProcess()
+{
+	Process *p = (Process*) malloc(sizeof(Process));
+	
+	p->Id = -1;
+	p->ArrivalTime = -1;
+	p->ExecutionTimeNeeded = -1;
+	p->IOStartTime = -1;
+	p->IOEndTime = -1;
+	p->ExecutingTime = -1;
+	p->next = NULL;
+	p->previous = NULL;	
+}
+
+Process* GetCopy(Process p)
+{
+	return &p;
 }

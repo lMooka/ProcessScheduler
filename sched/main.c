@@ -2,7 +2,10 @@
 #include <stdlib.h>
 #include "header.h"
 #include <sys/types.h>
+#include <Windows.h> // #include <unistd.h> ON LINUX
 
+CPU *cpu;
+List *processList;
 ProcessScheduler *pScheduler;
 
 int main(int argc, char **argv)
@@ -16,33 +19,162 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	InitProgram();
-
-	printf("%s \n", argv[1]);
-	ReadFile(argv[1]);
-	size = pScheduler->list.CircularList->size;
-
-	//printf("id\ta time\te time\tIO start\tIO end\n\n");
-	for(i = 0; i < size; i++)
-	{
-		Process *p = next(pScheduler->list.CircularList);
-		printf("%d\t%d\t%d\t%d\t%d \n", p->Id, p->ArrivalTime, p->ExecutionTimeNeeded, p->IOStartTime, p->IOEndTime);
-	}
-
+	InitProgram(argv[1],argv[2], argv[3]);
+	printProcesses();
 	getchar();
 }
 
-void InitProgram()
+void printProcesses()
 {
+	Process *p;
+	int size = pScheduler->list.CircularList->size;
+
+	//printf("id\ta time\te time\tIO start\tIO end\n\n");
+	p = processList->begin;
+	while(p != NULL)
+	{
+		printf("%d\t%d\t%d\t%d\t%d \n", p->Id, p->ArrivalTime, p->ExecutionTimeNeeded, p->IOStartTime, p->IOEndTime);
+		p = p->next;
+	}
+
+}
+
+void InitProgram(char* algorithm, char* inputFile, char* outputFile)
+{
+	printf("%s %s %s \n", algorithm, inputFile, outputFile);
+	processList = newList();
+
 	pScheduler = (ProcessScheduler*) malloc(sizeof(ProcessScheduler));
 	pScheduler->list.CircularList = newCircularList();
 	pScheduler->list.LinkedList = newList();
-	pScheduler->algorithm = RR;
+
+	if(strcmp(algorithm, "FIFO"))
+		pScheduler->algorithm = FIFO;
+	else if(strcmp(algorithm, "SJF"))
+		pScheduler->algorithm = SJF;
+	else if(strcmp(algorithm, "RR"))
+		pScheduler->algorithm = RR;
+
+	cpu = (CPU*) malloc(sizeof(CPU));
+	cpu->Clock = 0;
+	cpu->ExecProcess = NULL;
+
+	LoadFile(inputFile);
+
 	return;
 }
 
+void addProcess(Process *p)
+{
+	addNode(processList, p);
+}
+
+void removeProcess(Process *p)
+{
+	switch (pScheduler->algorithm)
+	{
+	case FIFO:
+	case SJF:
+		removeNode(pScheduler->list.LinkedList, p, 0);
+		break;
+
+	case RR:
+		removeNodeC(pScheduler->list.CircularList, p, 0);
+		break;
+	}
+}
+
+void CPUStart()
+{
+
+	while(1)
+	{
+		Process *p = GetNextProcess();
+
+		if(p != NULL)
+			SetCPUProcess(p);
+		Clock();
+	}
+}
+
+void Clock()
+{
+	printf("[Clock %d] Executando Processo: %d.", cpu->Clock, cpu->ExecProcess->Id);
+	Sleep(1000);
+	cpu->Clock++;
+	cpu->ExecProcess->ExecutingTime++;
+}
+
+void SetCPUProcess(Process *p)
+{
+	cpu->ExecProcess = p;
+}
+
+// Retorna o próximo processo a ser executado além de escalonar os processos
+Process* ScheduleProcesses()
+{
+	switch (pScheduler->algorithm)
+	{
+	case FIFO:
+		return DoFIFO();
+	case SJF:
+		return DoSJF();
+	case RR:
+		return DoRR();
+	}
+}
+
+Process* DoFIFO()
+{
+	Process *p;
+
+	// Verifica se algum processo se inicializa com o CLOCK atual e o adiciona ao escalonador.
+	p = processList->begin;
+	while(p != NULL)
+	{
+		if(p->ArrivalTime == cpu->Clock)
+		{
+			Process* auxp = p;
+
+			p = p->next;
+			removeNode(processList, auxp, 0);
+
+			auxp->next = NULL;
+			auxp->previous = NULL;
+			addNode(pScheduler->list.LinkedList, auxp);
+		}
+	}
+
+	// Realiza escalonamento
+	if(cpu->ExecProcess->ExecutingTime >= cpu->ExecProcess->ExecutionTimeNeeded)
+	{
+		printf("[%d] Processo %d terminou sua execução.", cpu->Clock, cpu->ExecProcess->Id);
+		removeNode(pScheduler->list.LinkedList, cpu->ExecProcess, 0);
+	}
+	else if(cpu->ExecProcess->IOStartTime >= cpu->Clock && cpu->ExecProcess->IOStartTime <= cpu->Clock)
+	{
+		printf("[%d] Processo %d entrou em IO.", cpu->Clock, cpu->ExecProcess->Id);
+	}
+
+	return NULL;
+}
+
+
+Process* DoSJF()
+{
+	int i;
+	return NULL;
+}
+
+Process* DoRR()
+{
+	int i;
+	return NULL;
+}
+
+
 // ReadFile utiliza conceito de Máquina de Estado Finito, maiores dúvidas observar diagrama no arquivo ReadFileFMS.png
-void ReadFile(char *path)
+void LoadFile(char *path)
 {
 	char c;
 	char buf[10];
@@ -55,12 +187,12 @@ void ReadFile(char *path)
 	fp = fopen("entrada.txt", "r");
 	if(!fp)
 	{
-		fprintf(stderr, "arquivo entrada.txt não foi encontrado.");
+		fprintf(stderr, "arquivo %s não foi encontrado.", path);
 		exit(1);
 		return;
 	}
 
-	p = (Process*) malloc(sizeof(Process));
+	p = newProcess();
 
 	while(1)
 	{
@@ -98,6 +230,7 @@ void ReadFile(char *path)
 			else
 			{
 				fprintf(stderr, "Arquivo em formato incorreto, impossível leitura.");
+				exit(1);
 				return;
 			}
 		}
@@ -118,7 +251,7 @@ void ReadFile(char *path)
 					addProcess(p);
 					p->IOStartTime =  0;
 					p->IOEndTime = 0;
-					p = (Process*) malloc(sizeof(Process));
+					p = newProcess();
 					continue;
 				}
 				else if(isNumeric(c))
@@ -130,6 +263,7 @@ void ReadFile(char *path)
 				else
 				{
 					fprintf(stderr, "Arquivo em formato incorreto, impossível leitura.");
+					exit(1);
 					return;
 				}
 			}
@@ -162,6 +296,7 @@ void ReadFile(char *path)
 				else
 				{
 					fprintf(stderr, "Arquivo em formato incorreto, impossível leitura.");
+					exit(1);
 					return;
 				}
 			}
@@ -171,7 +306,7 @@ void ReadFile(char *path)
 				{
 					state = 0;
 					addProcess(p);
-					p = (Process*) malloc(sizeof(Process));
+					p = newProcess();
 					continue;
 				}
 				else if(c == EOF)
@@ -182,54 +317,16 @@ void ReadFile(char *path)
 				else
 				{
 					fprintf(stderr, "Arquivo em formato incorreto, impossível leitura.");
+					exit(1);
 					return;
 				}
 			}
 			else
 			{
 				fprintf(stderr, "Arquivo em formato incorreto, impossível leitura.");
+				exit(1);
 				return;
 			}
 		}
 	}
-}
-
-void addProcess(Process *p)
-{
-	switch (pScheduler->algorithm)
-	{
-	case FIFO:
-	case SJF:
-		addNode(pScheduler->list.LinkedList, p);
-		break;
-
-	case RR:
-		addNodeC(pScheduler->list.CircularList, p);
-		break;
-	}
-}
-
-void removeProcess(Process *p)
-{
-	switch (pScheduler->algorithm)
-	{
-	case FIFO:
-	case SJF:
-		removeNode(pScheduler->list.LinkedList, p);
-		break;
-
-	case RR:
-		removeNodeC(pScheduler->list.CircularList, p);
-		break;
-	}
-}
-
-void SetCPUProcess(Process *p)
-{
-
-}
-
-void CPUInterruption()
-{
-
 }
