@@ -61,7 +61,10 @@ int removeNode(List *L, Process *node, int useFree);
 
 int addNodeC(CircularList *L, Process *node);
 int removeNodeC(CircularList *L, Process *node, int useFree);
+
 Process* next(CircularList *L);
+Process* newProcess();
+Process* GetCopy(Process p);
 
 void LoadFile(char *path);
 void InitProgram();
@@ -69,14 +72,13 @@ void InitProgram();
 void addProcess(Process *p);
 void removeProcess(Process *p);
 
-Process* GetNextProcess();
+void ScheduleProcesses();
 void SetCPUProcess(Process *p);
+
 void printProcesses();
-Process* newProcess();
-Process* GetCopy(Process p);
 
 
 void Clock();
-Process* DoFIFO();
-Process* DoSJF();
-Process* DoFIFO();
+void DoFIFO();
+void DoSJF();
+void DoRR();

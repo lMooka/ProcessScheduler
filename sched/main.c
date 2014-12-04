@@ -36,7 +36,6 @@ void printProcesses()
 		printf("%d\t%d\t%d\t%d\t%d \n", p->Id, p->ArrivalTime, p->ExecutionTimeNeeded, p->IOStartTime, p->IOEndTime);
 		p = p->next;
 	}
-
 }
 
 void InitProgram(char* algorithm, char* inputFile, char* outputFile)
@@ -71,30 +70,25 @@ void addProcess(Process *p)
 
 void removeProcess(Process *p)
 {
-	switch (pScheduler->algorithm)
-	{
-	case FIFO:
-	case SJF:
-		removeNode(pScheduler->list.LinkedList, p, 0);
-		break;
-
-	case RR:
-		removeNodeC(pScheduler->list.CircularList, p, 0);
-		break;
-	}
+	removeNode(processList, p, 0);
 }
 
 void CPUStart()
 {
-
 	while(1)
 	{
-		Process *p = GetNextProcess();
-
-		if(p != NULL)
-			SetCPUProcess(p);
+		ScheduleProcesses();
 		Clock();
 	}
+}
+
+Process* GetNextProcess()
+{
+	if(cpu->ExecProcess->ArrivalTime == cpu->Clock)
+	{
+
+	}
+
 }
 
 void Clock()
@@ -111,20 +105,20 @@ void SetCPUProcess(Process *p)
 }
 
 // Retorna o próximo processo a ser executado além de escalonar os processos
-Process* ScheduleProcesses()
+void ScheduleProcesses()
 {
 	switch (pScheduler->algorithm)
 	{
 	case FIFO:
-		return DoFIFO();
+		DoFIFO(); break;
 	case SJF:
-		return DoSJF();
+		DoSJF(); break;
 	case RR:
-		return DoRR();
+		DoRR(); break;
 	}
 }
 
-Process* DoFIFO()
+void DoFIFO()
 {
 	Process *p;
 
@@ -150,28 +144,25 @@ Process* DoFIFO()
 	{
 		printf("[%d] Processo %d terminou sua execução.", cpu->Clock, cpu->ExecProcess->Id);
 		removeNode(pScheduler->list.LinkedList, cpu->ExecProcess, 0);
+
+		SetCPUProcess(pScheduler->list.LinkedList->begin);
+		return;
 	}
 	else if(cpu->ExecProcess->IOStartTime >= cpu->Clock && cpu->ExecProcess->IOStartTime <= cpu->Clock)
 	{
 		printf("[%d] Processo %d entrou em IO.", cpu->Clock, cpu->ExecProcess->Id);
 	}
-
-	return NULL;
 }
 
-
-Process* DoSJF()
+void DoSJF()
 {
-	int i;
-	return NULL;
+
 }
 
-Process* DoRR()
+void DoRR()
 {
-	int i;
-	return NULL;
-}
 
+}
 
 // ReadFile utiliza conceito de Máquina de Estado Finito, maiores dúvidas observar diagrama no arquivo ReadFileFMS.png
 void LoadFile(char *path)
