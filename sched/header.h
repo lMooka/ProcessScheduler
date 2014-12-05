@@ -12,6 +12,7 @@ typedef struct structProcess
 	int IOEndTime;
 
 	// Informações de execução
+	int IsExecutingIO;
 	int ExecutingTime;
 	int Quantum;
 
@@ -35,7 +36,7 @@ typedef struct
 
 typedef struct
 {
-	enum { RR = 0, FIFO, SJF } algorithm;
+	enum { RR = 0, FCFS, SJF } algorithm;
 	union
 	{
 		List *LinkedList;
@@ -64,7 +65,6 @@ int removeNodeC(CircularList *L, Process *node, int useFree);
 
 Process* next(CircularList *L);
 Process* newProcess();
-Process* GetCopy(Process p);
 
 void LoadFile(char *path);
 void InitProgram();
@@ -78,6 +78,10 @@ void SetCPUProcess(Process *p);
 void printProcesses();
 
 void Clock();
-void DoFIFO();
+void DoFCFS();
 void DoSJF();
 void DoRR();
+
+void SetNextProcessReady();
+void CPUStart();
+void DoIO();

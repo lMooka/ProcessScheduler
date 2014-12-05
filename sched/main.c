@@ -21,6 +21,8 @@ int main(int argc, char **argv)
 
 	InitProgram(argv[1],argv[2], argv[3]);
 	printProcesses();
+
+	CPUStart();
 	getchar();
 }
 
@@ -36,6 +38,7 @@ void printProcesses()
 		printf("%d\t%d\t%d\t%d\t%d \n", p->Id, p->ArrivalTime, p->ExecutionTimeNeeded, p->IOStartTime, p->IOEndTime);
 		p = p->next;
 	}
+	printf("\n\n\n");
 }
 
 void InitProgram(char* algorithm, char* inputFile, char* outputFile)
@@ -47,8 +50,8 @@ void InitProgram(char* algorithm, char* inputFile, char* outputFile)
 	pScheduler->list.CircularList = newCircularList();
 	pScheduler->list.LinkedList = newList();
 
-	if(strcmp(algorithm, "FIFO"))
-		pScheduler->algorithm = FIFO;
+	if(strcmp(algorithm, "FCFS"))
+		pScheduler->algorithm = FCFS;
 	else if(strcmp(algorithm, "SJF"))
 		pScheduler->algorithm = SJF;
 	else if(strcmp(algorithm, "RR"))
@@ -75,28 +78,73 @@ void removeProcess(Process *p)
 
 void CPUStart()
 {
+
 	while(1)
 	{
-		ScheduleProcesses();
 		Clock();
 	}
 }
 
-Process* GetNextProcess()
-{
-	if(cpu->ExecProcess->ArrivalTime == cpu->Clock)
-	{
-
-	}
-
-}
-
 void Clock()
 {
-	printf("[Clock %d] Executando Processo: %d.", cpu->Clock, cpu->ExecProcess->Id);
 	Sleep(1000);
+	printf("\n[Clock %d]\n\n", cpu->Clock);
+
+	DoIO();
+	ScheduleProcesses();
+
+	if(cpu->ExecProcess == NULL)
+	{
+		printf("Nenhum processo executando.\n");
+	}
+	else
+	{
+		cpu->ExecProcess->ExecutingTime++;
+		printf("Processo %d executando. [%d/%d]\n", cpu->ExecProcess->Id, cpu->ExecProcess->ExecutingTime, cpu->ExecProcess->ExecutionTimeNeeded);
+	}
+
 	cpu->Clock++;
-	cpu->ExecProcess->ExecutingTime++;
+}
+
+void DoIO()
+{
+
+	switch(pScheduler->algorithm)
+	{
+	case FCFS:
+	case SJF:
+		{
+			Process *p = pScheduler->list.LinkedList->begin;
+			Process *endp = pScheduler->list.LinkedList->end;
+
+			if(p == NULL)
+				return;
+
+			while(1)
+			{
+				if(p->IsExecutingIO)
+				{
+					p->ExecutingTime++;
+					if(p->ExecutingTime >= p->IOEndTime && p->IsExecutingIO)
+					{
+						p->IsExecutingIO = 0;
+						printf("Processo %d terminou o IO. [%d/%d]\n", p->Id, p->ExecutingTime, p->ExecutionTimeNeeded);
+					}
+					else
+						printf("Processo %d executando IO. [%d/%d]\n", p->Id, p->ExecutingTime, p->ExecutionTimeNeeded);
+				}
+
+				if(p == endp)
+					return;
+
+				p = p->next;
+			}
+		}
+		break;
+
+	case RR:
+		break;
+	}
 }
 
 void SetCPUProcess(Process *p)
@@ -104,13 +152,51 @@ void SetCPUProcess(Process *p)
 	cpu->ExecProcess = p;
 }
 
+void SetNextProcessReady()
+{
+	if(pScheduler->algorithm != RR)
+	{
+		Process *p;
+		Process *pend;
+
+		p = pScheduler->list.LinkedList->begin;
+		pend = pScheduler->list.LinkedList->end;
+		while(1)
+		{
+			// Verifica IO
+			if(p != pend && p->IsExecutingIO)
+			{
+				p = p->next;
+				continue;
+			}
+
+			if(p == NULL || p == pend)
+			{
+				printf("Nenhum processo foi escalonado para executar.\n", cpu->Clock);
+				SetCPUProcess(NULL);
+				return;
+			}
+			else
+			{
+				SetCPUProcess(p);			
+				printf("Processo %d foi escalonado para executar.\n", p->Id);
+				return;
+			}
+		}
+	}
+	else
+	{
+		// Não implementado ainda
+	}
+}
+
 // Retorna o próximo processo a ser executado além de escalonar os processos
 void ScheduleProcesses()
 {
 	switch (pScheduler->algorithm)
 	{
-	case FIFO:
-		DoFIFO(); break;
+	case FCFS:
+		DoFCFS(); break;
 	case SJF:
 		DoSJF(); break;
 	case RR:
@@ -118,7 +204,7 @@ void ScheduleProcesses()
 	}
 }
 
-void DoFIFO()
+void DoFCFS()
 {
 	Process *p;
 
@@ -128,29 +214,57 @@ void DoFIFO()
 	{
 		if(p->ArrivalTime == cpu->Clock)
 		{
-			Process* auxp = p;
+			Process* nextp = p->next;
 
-			p = p->next;
-			removeNode(processList, auxp, 0);
+			removeNode(processList, p, 0);
 
-			auxp->next = NULL;
-			auxp->previous = NULL;
-			addNode(pScheduler->list.LinkedList, auxp);
+			p->next = NULL;
+			p->previous = NULL;
+			addNode(pScheduler->list.LinkedList, p);
+
+			printf("Novo processo de id %d. Aguardando escalonamento.\n", p->Id);
+			p = nextp;
+			continue;
 		}
+
+		p = p->next;
+	}
+
+	if(pScheduler->list.LinkedList->size == 0 && processList->size == 0)
+	{
+		printf("Execução finalizada.");
+		exit(0);
+	}
+
+	// Adiciona um processo caso cpu esteja livre, se possível.
+	if(cpu->ExecProcess == NULL)
+	{
+		SetNextProcessReady();
+		return;
 	}
 
 	// Realiza escalonamento
 	if(cpu->ExecProcess->ExecutingTime >= cpu->ExecProcess->ExecutionTimeNeeded)
 	{
-		printf("[%d] Processo %d terminou sua execução.", cpu->Clock, cpu->ExecProcess->Id);
+		printf("Processo %d terminou de executar.\n", cpu->ExecProcess->Id);
 		removeNode(pScheduler->list.LinkedList, cpu->ExecProcess, 0);
-
-		SetCPUProcess(pScheduler->list.LinkedList->begin);
+		SetCPUProcess(NULL);
 		return;
-	}
-	else if(cpu->ExecProcess->IOStartTime >= cpu->Clock && cpu->ExecProcess->IOStartTime <= cpu->Clock)
+	} // Entrou em IO
+	else if(cpu->ExecProcess->ExecutingTime == cpu->ExecProcess->IOStartTime)
 	{
-		printf("[%d] Processo %d entrou em IO.", cpu->Clock, cpu->ExecProcess->Id);
+		// Adiciona o node ao final da lista (perda de prioridade)
+		removeNode(pScheduler->list.LinkedList, cpu->ExecProcess, 0);
+		addNode(pScheduler->list.LinkedList, cpu->ExecProcess);
+
+		// Define que o processo está em IO
+		cpu->ExecProcess->IsExecutingIO = 1;
+		printf("Processo %d entrou em IO.\n", cpu->ExecProcess->Id);
+
+		// Define o próximo para pronto para executar
+		SetNextProcessReady();
+
+		return;
 	}
 }
 
@@ -178,7 +292,7 @@ void LoadFile(char *path)
 	fp = fopen("entrada.txt", "r");
 	if(!fp)
 	{
-		fprintf(stderr, "arquivo %s não foi encontrado.", path);
+		fprintf(stderr, "arquivo %s não foi encontrado.\n", path);
 		exit(1);
 		return;
 	}
@@ -220,7 +334,7 @@ void LoadFile(char *path)
 			}
 			else
 			{
-				fprintf(stderr, "Arquivo em formato incorreto, impossível leitura.");
+				fprintf(stderr, "Arquivo em formato incorreto, impossível leitura.\n");
 				exit(1);
 				return;
 			}
@@ -231,8 +345,6 @@ void LoadFile(char *path)
 			{
 				if(c == EOF)
 				{
-					p->IOStartTime =  0;
-					p->IOEndTime = 0;
 					addProcess(p);
 					return;
 				}
@@ -240,8 +352,6 @@ void LoadFile(char *path)
 				{
 					state = 0;
 					addProcess(p);
-					p->IOStartTime =  0;
-					p->IOEndTime = 0;
 					p = newProcess();
 					continue;
 				}
@@ -253,7 +363,7 @@ void LoadFile(char *path)
 				}
 				else
 				{
-					fprintf(stderr, "Arquivo em formato incorreto, impossível leitura.");
+					fprintf(stderr, "Arquivo em formato incorreto, impossível leitura.\n");
 					exit(1);
 					return;
 				}
@@ -286,7 +396,7 @@ void LoadFile(char *path)
 				}
 				else
 				{
-					fprintf(stderr, "Arquivo em formato incorreto, impossível leitura.");
+					fprintf(stderr, "Arquivo em formato incorreto, impossível leitura.\n");
 					exit(1);
 					return;
 				}
@@ -307,14 +417,14 @@ void LoadFile(char *path)
 				}
 				else
 				{
-					fprintf(stderr, "Arquivo em formato incorreto, impossível leitura.");
+					fprintf(stderr, "Arquivo em formato incorreto, impossível leitura.\n");
 					exit(1);
 					return;
 				}
 			}
 			else
 			{
-				fprintf(stderr, "Arquivo em formato incorreto, impossível leitura.");
+				fprintf(stderr, "Arquivo em formato incorreto, impossível leitura.\n");
 				exit(1);
 				return;
 			}

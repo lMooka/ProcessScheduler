@@ -211,12 +211,10 @@ Process* newProcess()
 	p->ExecutionTimeNeeded = -1;
 	p->IOStartTime = -1;
 	p->IOEndTime = -1;
-	p->ExecutingTime = -1;
+	p->ExecutingTime = 0;
+	p->IsExecutingIO = 0;
 	p->next = NULL;
 	p->previous = NULL;	
-}
 
-Process* GetCopy(Process p)
-{
-	return &p;
+	return p;
 }
