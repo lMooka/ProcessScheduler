@@ -77,7 +77,6 @@ void SetCPUProcess(Process *p);
 
 void printProcesses();
 
-
 void Clock();
 void DoFIFO();
 void DoSJF();

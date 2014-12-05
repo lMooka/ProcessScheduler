@@ -114,7 +114,7 @@ CircularList* newCircularList()
 // ******  addNode                          ******
 // ***********************************************
 // Adiciona um node na lista.
-int addNodeC(CircularList *L, Process *node, int useFree)
+int addNodeC(CircularList *L, Process *node)
 {
 	// Verifica se o elemento passado é igual a NULL,
 	// se sim, não há necessidade de continuar.
@@ -149,17 +149,13 @@ int addNodeC(CircularList *L, Process *node, int useFree)
 
 	L->size++;
 
-	
-	if(useFree) 
-		free(node);
-
 	return 1;
 }
 // ***********************************************
 // ******  removeNode                       ******
 // ***********************************************
 // Remove um node da lista.
-int removeNodeC(CircularList *L, Process *node)
+int removeNodeC(CircularList *L, Process *node, int useFree)
 {
 	//Elemento NULL
 	if(!node)
@@ -193,6 +189,9 @@ int removeNodeC(CircularList *L, Process *node)
 		node->next->previous = node->previous;
 		L->size--;
 	}
+
+	if(useFree)
+		free(node);
 
 	return 1;
 }
