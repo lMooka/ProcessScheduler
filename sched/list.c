@@ -36,12 +36,15 @@ int addNode(List *L, Process *node)
 	{
 		L->begin = node;
 		L->end = node;
+		node->next = NULL;
+		node->previous = NULL;
 	}
 	else
 	{
 		node->previous = L->end;
 		L->end->next = node;
 		L->end = node;
+		node->next = NULL;
 	}
 
 	L->size++;

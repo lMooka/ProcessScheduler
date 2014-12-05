@@ -170,7 +170,7 @@ void SetNextProcessReady()
 				continue;
 			}
 
-			if(p == NULL || p == pend)
+			if(p == NULL)
 			{
 				printf("Nenhum processo foi escalonado para executar.\n", cpu->Clock);
 				SetCPUProcess(NULL);
@@ -233,6 +233,7 @@ void DoFCFS()
 	if(pScheduler->list.LinkedList->size == 0 && processList->size == 0)
 	{
 		printf("Execução finalizada.");
+		getchar();
 		exit(0);
 	}
 
