@@ -2,9 +2,18 @@
 #include <stdlib.h>
 #include "header.h"
 #include <sys/types.h>
-#include <Windows.h> // #include <unistd.h> ON LINUX
 #include <string.h>
-//#include <unistd.h>
+
+#if defined(_WIN32)
+#include <Windows.h> // #include <unistd.h> ON LINUX
+#define pSleep(time) Sleep(time)
+#endif
+
+#if defined(__unix__)
+#include <unistd.h>
+#define pSleep(time) sleep(time/1000)
+#endif
+
 
 CPU *cpu;
 List *processList;
@@ -91,7 +100,7 @@ void CPUStart()
 
 void Clock()
 {
-	Sleep(1000);
+	pSleep(1000);
 	printf("\n[Clock %d]\n\n", cpu->Clock);
 
 	DoIO();
