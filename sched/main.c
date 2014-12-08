@@ -3,6 +3,8 @@
 #include "header.h"
 #include <sys/types.h>
 #include <Windows.h> // #include <unistd.h> ON LINUX
+#include <string.h>
+//#include <unistd.h>
 
 CPU *cpu;
 List *processList;
@@ -50,12 +52,17 @@ void InitProgram(char* algorithm, char* inputFile, char* outputFile)
 	pScheduler->list.CircularList = newCircularList();
 	pScheduler->list.LinkedList = newList();
 
-	if(strcmp(algorithm, "FCFS"))
+	if(!strcmp(algorithm, "FCFS"))
 		pScheduler->algorithm = FCFS;
-	else if(strcmp(algorithm, "SJF"))
+	else if(!strcmp(algorithm, "SJF"))
 		pScheduler->algorithm = SJF;
-	else if(strcmp(algorithm, "RR"))
+	else if(!strcmp(algorithm, "RR"))
 		pScheduler->algorithm = RR;
+	else
+	{
+		printf("Algoritmo incorreto.");
+		exit(0);
+	}
 
 	cpu = (CPU*) malloc(sizeof(CPU));
 	cpu->Clock = 0;
@@ -78,11 +85,8 @@ void removeProcess(Process *p)
 
 void CPUStart()
 {
-
 	while(1)
-	{
 		Clock();
-	}
 }
 
 void Clock()
@@ -154,17 +158,15 @@ void SetCPUProcess(Process *p)
 
 void SetNextProcessReady()
 {
-	if(pScheduler->algorithm != RR)
+	if(pScheduler->algorithm == FCFS)
 	{
 		Process *p;
-		Process *pend;
 
 		p = pScheduler->list.LinkedList->begin;
-		pend = pScheduler->list.LinkedList->end;
 		while(1)
 		{
 			// Verifica IO
-			if(p != pend && p->IsExecutingIO)
+			if(p->IsExecutingIO)
 			{
 				p = p->next;
 				continue;
@@ -172,8 +174,8 @@ void SetNextProcessReady()
 
 			if(p == NULL)
 			{
-				printf("Nenhum processo foi escalonado para executar.\n", cpu->Clock);
 				SetCPUProcess(NULL);
+				printf("Nenhum processo foi escalonado para executar.\n");
 				return;
 			}
 			else
@@ -183,10 +185,38 @@ void SetNextProcessReady()
 				return;
 			}
 		}
-	}
-	else
+	} else if(pScheduler->algorithm == SJF)
 	{
-		// Não implementado ainda
+		Process *p = NULL; 
+		Process *shortestProcess = NULL;
+
+		p = pScheduler->list.LinkedList->begin;
+		while(1)
+		{
+			if(p == NULL)
+				break;
+
+			// Verifica IO
+			if(p->IsExecutingIO)
+			{
+				p = p->next;
+				continue;
+			}
+
+			if(shortestProcess == NULL)
+			{
+				shortestProcess = p;
+				continue;
+			}
+
+			if((p->ExecutingTime - p->ExecutionTimeNeeded) < (shortestProcess->ExecutingTime - shortestProcess->ExecutionTimeNeeded))
+			{
+				shortestProcess = p;
+				continue;
+			}
+		}
+
+		SetCPUProcess(p);
 	}
 }
 
@@ -230,6 +260,7 @@ void DoFCFS()
 		p = p->next;
 	}
 
+	// Verifica se não há mais nada a ser executado.
 	if(pScheduler->list.LinkedList->size == 0 && processList->size == 0)
 	{
 		printf("Execução finalizada.");
@@ -271,7 +302,63 @@ void DoFCFS()
 
 void DoSJF()
 {
+	Process *p;
 
+	p = processList->begin;
+	while(p != NULL)
+	{
+		if(p->ArrivalTime == cpu->Clock)
+		{
+			Process* nextp = p->next;
+
+			removeNode(processList, p, 0);
+
+			p->next = NULL;
+			p->previous = NULL;
+			addNode(pScheduler->list.LinkedList, p);
+
+			printf("Novo processo de id %d. Aguardando escalonamento.\n", p->Id);
+			p = nextp;
+			continue;
+		}
+
+		p = p->next;
+	}
+
+	// Verifica se não há mais nada a ser executado.
+	if(pScheduler->list.LinkedList->size == 0 && processList->size == 0)
+	{
+		printf("Execução finalizada.");
+		getchar();
+		exit(0);
+	}
+
+	// Adiciona um processo caso cpu esteja livre, se possível.
+	if(cpu->ExecProcess == NULL)
+	{
+		SetNextProcessReady();
+		return;
+	}
+
+	// Realiza escalonamento
+	if(cpu->ExecProcess->ExecutingTime >= cpu->ExecProcess->ExecutionTimeNeeded)
+	{
+		printf("Processo %d terminou de executar.\n", cpu->ExecProcess->Id);
+		removeNode(pScheduler->list.LinkedList, cpu->ExecProcess, 1);
+		SetCPUProcess(NULL);
+		return;
+	} // Entrou em IO
+	else if(cpu->ExecProcess->ExecutingTime == cpu->ExecProcess->IOStartTime)
+	{
+		// Define que o processo está em IO
+		cpu->ExecProcess->IsExecutingIO = 1;
+		printf("Processo %d entrou em IO.\n", cpu->ExecProcess->Id);
+
+		// Define o próximo para pronto para executar
+		SetNextProcessReady();
+
+		return;
+	}
 }
 
 void DoRR()

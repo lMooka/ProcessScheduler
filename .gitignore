@@ -3,4 +3,5 @@
 *.sdf
 *vcxproj
 *vcxproj*
-
+*.v11.suo*
+*.opensdf
