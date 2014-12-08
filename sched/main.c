@@ -215,17 +215,20 @@ void SetNextProcessReady()
 			if(shortestProcess == NULL)
 			{
 				shortestProcess = p;
+				p = p->next;
 				continue;
 			}
 
-			if((p->ExecutingTime - p->ExecutionTimeNeeded) < (shortestProcess->ExecutingTime - shortestProcess->ExecutionTimeNeeded))
+			if((p->ExecutionTimeNeeded - p->ExecutingTime) < (shortestProcess->ExecutionTimeNeeded - shortestProcess->ExecutingTime))
 			{
 				shortestProcess = p;
 				continue;
 			}
+
+			p = p->next;
 		}
 
-		SetCPUProcess(p);
+		SetCPUProcess(shortestProcess);
 	}
 }
 
