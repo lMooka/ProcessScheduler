@@ -32,8 +32,8 @@ int main(int argc, char **argv)
 
 	InitProgram(argv[1],argv[2], argv[3]);
 	printProcesses();
-
 	CPUStart();
+
 	getchar();
 }
 
@@ -58,15 +58,22 @@ void InitProgram(char* algorithm, char* inputFile, char* outputFile)
 	processList = newList();
 
 	pScheduler = (ProcessScheduler*) malloc(sizeof(ProcessScheduler));
-	pScheduler->list.CircularList = newCircularList();
-	pScheduler->list.LinkedList = newList();
 
 	if(!strcmp(algorithm, "FCFS"))
+	{
 		pScheduler->algorithm = FCFS;
+		pScheduler->list.LinkedList = newList();
+	}
 	else if(!strcmp(algorithm, "SJF"))
+	{
 		pScheduler->algorithm = SJF;
+		pScheduler->list.LinkedList = newList();
+	}
 	else if(!strcmp(algorithm, "RR"))
+	{
 		pScheduler->algorithm = RR;
+		pScheduler->list.CircularList = newCircularList();
+	}
 	else
 	{
 		printf("Algoritmo incorreto.");
