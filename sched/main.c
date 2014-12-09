@@ -508,12 +508,6 @@ void DoRR()
 
 		cpu->ExecProcess->ExecutingQuantum = 0;
 		SetNextProcessReady();
-
-		//if(cpu->ExecProcess == lastProcessExec)
-		//{
-		//	cpu->ExecProcess->ExecutingQuantum = lastQuantum;
-		//	printf("Nenhum outro processo aguardando para executar. \n");
-		//}
 	}
 }
 

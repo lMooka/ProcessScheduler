@@ -133,29 +133,9 @@ int addNodeC(CircularList *L, Process *node)
 		node->next = node;
 		node->previous = node;
 	}
-	//else if(L->size == 1)
-	//{
-	//	node->next = h->next;
-	//	node->previous = h;
-	//	
-	//	h->next->previous = node;
-	//	h->next = node;
-
-	//	//L->head->next = node;
-	//	//L->head->previous = node;
-	//	//node->previous = L->head;
-	//	//node->next = L->head;
-	//}
 	else
 	{
 		Process *h = L->head;
-
-		//L->head = node;
-		//node->next = h->next;
-		//node->previous = h;
-
-		//h->next = node;
-		//h->next->previous = node;
 
 		node->next = h->next;
 		node->previous = h;
