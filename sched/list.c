@@ -180,25 +180,10 @@ int removeNodeC(CircularList *L, Process *node, int useFree)
 
 	if(node == L->head)
 	{
-		if(L->head->next != NULL)
-		{
-			L->head->next->previous = L->head->previous;
-			L->head = L->head->next;
-		}
-		else if(L->head->previous != NULL)
-		{
-			L->head->previous->next = L->head->next;
-			L->head = L->head->previous;
-		}
-		else
-		{
-			free(L->head);
-			L->head = NULL;
-			L->size = 0;
-			return 1;
-		}
-		L->size--;
-		return 1;
+		L->head = NULL;
+		node->next = NULL;
+		node->previous = NULL;
+		L->size = 0;
 	}
 	else
 	{
@@ -216,7 +201,7 @@ int removeNodeC(CircularList *L, Process *node, int useFree)
 Process* next(CircularList *L)
 {
 	L->head = L->head->next;
-	return L->head->previous;
+	return L->head;
 }
 
 Process* newProcess()

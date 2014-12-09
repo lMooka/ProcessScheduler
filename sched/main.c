@@ -18,6 +18,9 @@
 CPU *cpu;
 List *processList;
 ProcessScheduler *pScheduler;
+
+// Nota: Quantum pertence ao processo, porém, por uma questão de implementação, foi optado por definir o Quantum neste arquivo pelo
+// fato de que para nosso programa, o Quantum será igual para todos, não impondo prioridades entre processos para o RR através do mesmo.
 int Quantum = 0;
 
 int main(int argc, char **argv)
@@ -95,34 +98,34 @@ void InitProgram(char* algorithm, char* inputFile, char* outputFile)
 
 void SetQuantum()
 {
-	//Process *p;
-	//int averageQuantum = 0;
-	//int firstFlag = 0;
+	Process *p;
+	int averageQuantum = 0;
+	int firstFlag = 0;
 
-	//printf("Quantum: ");
+	printf("Quantum: ");
 
-	//p = processList->begin;
-	//while(1)
-	//{
-	//	if(p == NULL)
-	//		break;
+	p = processList->begin;
+	while(1)
+	{
+		if(p == NULL)
+			break;
 
-	//	if(firstFlag == 0)
-	//		firstFlag = 1;
-	//	else
-	//		printf(" + ");
+		if(firstFlag == 0)
+			firstFlag = 1;
+		else
+			printf(" + ");
 
-	//	averageQuantum += p->ExecutionTimeNeeded;
-	//	printf("%d", p->ExecutionTimeNeeded);
+		averageQuantum += p->ExecutionTimeNeeded;
+		printf("%d", p->ExecutionTimeNeeded);
 
-	//	p = p->next;
-	//}
+		p = p->next;
+	}
 
-	//Quantum = averageQuantum / processList->size;
-	//printf(" / %d = ~%d \n", processList->size, Quantum);
+	Quantum = averageQuantum / (processList->size * 2);
+	printf(" / (%d * 2) = ~%d \n", processList->size, Quantum);
 
-	printf("Quantum: 2\n\n");
-	Quantum = 2;
+	//printf("Quantum: 2\n\n");
+	//Quantum = 2;
 }
 
 void addProcess(Process *p)
@@ -491,6 +494,7 @@ void DoRR()
 	{
 		// Define que o processo está em IO
 		cpu->ExecProcess->IsExecutingIO = 1;
+		cpu->ExecProcess->ExecutingQuantum = 0;
 		printf("Processo %d entrou em IO.\n", cpu->ExecProcess->Id);
 
 		// Define o próximo para pronto para executar
@@ -499,8 +503,17 @@ void DoRR()
 		return;
 	} else if(cpu->ExecProcess->ExecutingQuantum >= Quantum)
 	{
+		Process *lastProcessExec = cpu->ExecProcess;
+		int lastQuantum = cpu->ExecProcess->ExecutingQuantum;
+
 		cpu->ExecProcess->ExecutingQuantum = 0;
 		SetNextProcessReady();
+
+		//if(cpu->ExecProcess == lastProcessExec)
+		//{
+		//	cpu->ExecProcess->ExecutingQuantum = lastQuantum;
+		//	printf("Nenhum outro processo aguardando para executar. \n");
+		//}
 	}
 }
 
