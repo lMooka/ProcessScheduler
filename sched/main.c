@@ -18,6 +18,7 @@
 CPU *cpu;
 List *processList;
 ProcessScheduler *pScheduler;
+int Quantum = 0;
 
 int main(int argc, char **argv)
 {
@@ -31,7 +32,6 @@ int main(int argc, char **argv)
 	}
 
 	InitProgram(argv[1],argv[2], argv[3]);
-	printProcesses();
 	CPUStart();
 
 	getchar();
@@ -85,8 +85,44 @@ void InitProgram(char* algorithm, char* inputFile, char* outputFile)
 	cpu->ExecProcess = NULL;
 
 	LoadFile(inputFile);
+	printProcesses();
+
+	if(pScheduler->algorithm == RR)
+		SetQuantum();
 
 	return;
+}
+
+void SetQuantum()
+{
+	//Process *p;
+	//int averageQuantum = 0;
+	//int firstFlag = 0;
+
+	//printf("Quantum: ");
+
+	//p = processList->begin;
+	//while(1)
+	//{
+	//	if(p == NULL)
+	//		break;
+
+	//	if(firstFlag == 0)
+	//		firstFlag = 1;
+	//	else
+	//		printf(" + ");
+
+	//	averageQuantum += p->ExecutionTimeNeeded;
+	//	printf("%d", p->ExecutionTimeNeeded);
+
+	//	p = p->next;
+	//}
+
+	//Quantum = averageQuantum / processList->size;
+	//printf(" / %d = ~%d \n", processList->size, Quantum);
+
+	printf("Quantum: 2\n\n");
+	Quantum = 2;
 }
 
 void addProcess(Process *p)
@@ -120,10 +156,20 @@ void Clock()
 	else
 	{
 		cpu->ExecProcess->ExecutingTime++;
-		printf("Processo %d executando. [%d/%d]\n", cpu->ExecProcess->Id, cpu->ExecProcess->ExecutingTime, cpu->ExecProcess->ExecutionTimeNeeded);
+
+		if(pScheduler->algorithm == RR)
+		{
+			cpu->ExecProcess->ExecutingQuantum++;
+			printf("Processo %d executando. [%d/%d]  / Quantum: [%d/%d]\n",
+				cpu->ExecProcess->Id, cpu->ExecProcess->ExecutingTime, cpu->ExecProcess->ExecutionTimeNeeded, cpu->ExecProcess->ExecutingQuantum, Quantum);
+		}
+		else
+			printf("Processo %d executando. [%d/%d]\n", cpu->ExecProcess->Id, cpu->ExecProcess->ExecutingTime, cpu->ExecProcess->ExecutionTimeNeeded);
 	}
 
 	cpu->Clock++;
+
+
 }
 
 void DoIO()
@@ -237,6 +283,15 @@ void SetNextProcessReady()
 
 		SetCPUProcess(shortestProcess);
 	}
+	else if(pScheduler->algorithm == RR)
+	{	
+		SetCPUProcess(next(pScheduler->list.CircularList));
+	}
+	else
+	{
+		printf("Algoritmo de escalonamento inexistente.");
+		exit(0);
+	}
 }
 
 // Retorna o próximo processo a ser executado além de escalonar os processos
@@ -323,6 +378,7 @@ void DoSJF()
 {
 	Process *p;
 
+	// Verifica se algum processo se inicializa com o CLOCK atual e o adiciona ao escalonador.
 	p = processList->begin;
 	while(p != NULL)
 	{
@@ -382,7 +438,70 @@ void DoSJF()
 
 void DoRR()
 {
+	int i;
+	int size;
+	Process *p;
 
+	// Verifica se algum processo se inicializa com o CLOCK atual e o adiciona ao escalonador.
+	p = processList->begin;
+	while(p != NULL)
+	{
+		if(p->ArrivalTime == cpu->Clock)
+		{
+			Process* nextp = p->next;
+
+			removeNode(processList, p, 0);
+
+			p->next = NULL;
+			p->previous = NULL;
+			addNodeC(pScheduler->list.CircularList, p);
+
+			printf("Novo processo de id %d. Aguardando escalonamento.\n", p->Id);
+			p = nextp;
+			continue;
+		}
+
+		p = p->next;
+	}
+
+	// Verifica se não há mais nada a ser executado.
+	if(pScheduler->list.CircularList->size == 0 && processList->size == 0)
+	{
+		printf("Execução finalizada.");
+		getchar();
+		exit(0);
+	}
+
+	// Adiciona um processo caso cpu esteja livre, se possível.
+	if(cpu->ExecProcess == NULL)
+	{
+		SetNextProcessReady();
+		return;
+	}
+
+	// Realiza escalonamento
+	if(cpu->ExecProcess->ExecutingTime >= cpu->ExecProcess->ExecutionTimeNeeded)
+	{
+		printf("Processo %d terminou de executar.\n", cpu->ExecProcess->Id);
+		removeNodeC(pScheduler->list.CircularList, cpu->ExecProcess, 1);
+		SetCPUProcess(NULL);
+		return;
+	} // Entrou em IO
+	else if(cpu->ExecProcess->ExecutingTime == cpu->ExecProcess->IOStartTime)
+	{
+		// Define que o processo está em IO
+		cpu->ExecProcess->IsExecutingIO = 1;
+		printf("Processo %d entrou em IO.\n", cpu->ExecProcess->Id);
+
+		// Define o próximo para pronto para executar
+		SetNextProcessReady();
+
+		return;
+	} else if(cpu->ExecProcess->ExecutingQuantum >= Quantum)
+	{
+		cpu->ExecProcess->ExecutingQuantum = 0;
+		SetNextProcessReady();
+	}
 }
 
 // ReadFile utiliza conceito de Máquina de Estado Finito, maiores dúvidas observar diagrama no arquivo ReadFileFMS.png

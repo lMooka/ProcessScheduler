@@ -119,6 +119,8 @@ CircularList* newCircularList()
 // Adiciona um node na lista.
 int addNodeC(CircularList *L, Process *node)
 {
+	Process *h = L->head;
+
 	// Verifica se o elemento passado é igual a NULL,
 	// se sim, não há necessidade de continuar.
 	if(!L || !node)
@@ -131,23 +133,35 @@ int addNodeC(CircularList *L, Process *node)
 		node->next = node;
 		node->previous = node;
 	}
-	else if(L->size == 1)
-	{
-		L->head->next = node;
-		L->head->previous = node;
-		node->previous = L->head;
-		node->next = L->head;
-	}
+	//else if(L->size == 1)
+	//{
+	//	node->next = h->next;
+	//	node->previous = h;
+	//	
+	//	h->next->previous = node;
+	//	h->next = node;
+
+	//	//L->head->next = node;
+	//	//L->head->previous = node;
+	//	//node->previous = L->head;
+	//	//node->next = L->head;
+	//}
 	else
 	{
 		Process *h = L->head;
 
-		L->head = node;
+		//L->head = node;
+		//node->next = h->next;
+		//node->previous = h;
+
+		//h->next = node;
+		//h->next->previous = node;
+
 		node->next = h->next;
 		node->previous = h;
 
-		h->next = node;
 		h->next->previous = node;
+		h->next = node;
 	}
 
 	L->size++;
@@ -208,13 +222,14 @@ Process* next(CircularList *L)
 Process* newProcess()
 {
 	Process *p = (Process*) malloc(sizeof(Process));
-	
+
 	p->Id = -1;
 	p->ArrivalTime = -1;
 	p->ExecutionTimeNeeded = -1;
 	p->IOStartTime = -1;
 	p->IOEndTime = -1;
 	p->ExecutingTime = 0;
+	p->ExecutingQuantum = 0;
 	p->IsExecutingIO = 0;
 	p->next = NULL;
 	p->previous = NULL;	

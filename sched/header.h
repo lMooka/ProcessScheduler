@@ -14,7 +14,7 @@ typedef struct structProcess
 	// Informações de execução
 	int IsExecutingIO;
 	int ExecutingTime;
-	int Quantum;
+	int ExecutingQuantum;
 
 	// Informações de Node
 	struct structProcess *next;
@@ -85,3 +85,4 @@ void DoRR();
 void SetNextProcessReady();
 void CPUStart();
 void DoIO();
+void SetQuantum();
