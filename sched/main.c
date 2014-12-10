@@ -16,8 +16,10 @@
 
 
 CPU *cpu;
-List *processList;
+List *processList, *outputList;
 ProcessScheduler *pScheduler;
+
+FILE *outFile;
 
 // Nota: Quantum pertence ao processo, porém, por uma questão de implementação, foi optado por definir o Quantum neste arquivo pelo
 // fato de que para nosso programa, o Quantum será igual para todos, não impondo prioridades entre processos para o RR através do mesmo.
@@ -36,7 +38,6 @@ int main(int argc, char **argv)
 
 	InitProgram(argv[1],argv[2], argv[3]);
 	CPUStart();
-
 	getchar();
 }
 
@@ -55,10 +56,35 @@ void printProcesses()
 	printf("\n\n\n");
 }
 
+void printOutput()
+{
+	int i;
+	float averageTime = 0;
+	Process *p = outputList->begin;
+
+	printf("\n\n\n");
+	for(i = 0; i < outputList->size; i++, p = p->next)
+	{
+		printf("%d;%d;%d\n", p->Id, p->AbsStartTime, p->AbsEndTime);
+		fprintf(outFile, "%d;%d;%d\n", p->Id, p->AbsStartTime, p->AbsEndTime);
+
+		averageTime += p->AbsEndTime;
+	}
+
+	averageTime /= i;
+	printf("\nTempo total: %d\nTempo medio: %f", cpu->Clock, averageTime);
+	fprintf(outFile, "\nTempo total: %d\nTempo medio: %f", cpu->Clock, averageTime);
+
+	fclose(outFile);
+}
+
 void InitProgram(char* algorithm, char* inputFile, char* outputFile)
 {
 	printf("%s %s %s \n", algorithm, inputFile, outputFile);
 	processList = newList();
+	outputList = newList();
+
+	outFile = fopen(outputFile, "w");
 
 	pScheduler = (ProcessScheduler*) malloc(sizeof(ProcessScheduler));
 
@@ -147,7 +173,7 @@ void CPUStart()
 
 void Clock()
 {
-	pSleep(1000);
+	pSleep(100);
 	printf("\n[Clock %d]\n\n", cpu->Clock);
 
 	DoIO();
@@ -331,6 +357,8 @@ void DoFCFS()
 			p->previous = NULL;
 			addNode(pScheduler->list.LinkedList, p);
 
+			p->AbsStartTime = cpu->Clock;
+
 			printf("Novo processo de id %d. Aguardando escalonamento.\n", p->Id);
 			p = nextp;
 			continue;
@@ -343,6 +371,7 @@ void DoFCFS()
 	if(pScheduler->list.LinkedList->size == 0 && processList->size == 0)
 	{
 		printf("Execução finalizada.");
+		printOutput();
 		getchar();
 		exit(0);
 	}
@@ -359,6 +388,12 @@ void DoFCFS()
 	{
 		printf("Processo %d terminou de executar.\n", cpu->ExecProcess->Id);
 		removeNode(pScheduler->list.LinkedList, cpu->ExecProcess, 0);
+
+		// Adiciona dados de output
+		cpu->ExecProcess->AbsEndTime = cpu->Clock;
+		cpu->ExecProcess->AbsExecutionTime = cpu->ExecProcess->AbsEndTime - cpu->ExecProcess->AbsStartTime;
+		addNode(outputList, cpu->ExecProcess);
+
 		SetCPUProcess(NULL);
 		return;
 	} // Entrou em IO
@@ -397,6 +432,8 @@ void DoSJF()
 			p->previous = NULL;
 			addNode(pScheduler->list.LinkedList, p);
 
+			p->AbsStartTime = cpu->Clock;
+
 			printf("Novo processo de id %d. Aguardando escalonamento.\n", p->Id);
 			p = nextp;
 			continue;
@@ -409,6 +446,7 @@ void DoSJF()
 	if(pScheduler->list.LinkedList->size == 0 && processList->size == 0)
 	{
 		printf("Execução finalizada.");
+		printOutput();
 		getchar();
 		exit(0);
 	}
@@ -424,7 +462,13 @@ void DoSJF()
 	if(cpu->ExecProcess->ExecutingTime >= cpu->ExecProcess->ExecutionTimeNeeded)
 	{
 		printf("Processo %d terminou de executar.\n", cpu->ExecProcess->Id);
-		removeNode(pScheduler->list.LinkedList, cpu->ExecProcess, 1);
+		removeNode(pScheduler->list.LinkedList, cpu->ExecProcess, 0);
+
+		// Adiciona dados de output
+		cpu->ExecProcess->AbsEndTime = cpu->Clock;
+		cpu->ExecProcess->AbsExecutionTime = cpu->ExecProcess->AbsEndTime - cpu->ExecProcess->AbsStartTime;
+		addNode(outputList, cpu->ExecProcess);
+
 		SetCPUProcess(NULL);
 		return;
 	} // Entrou em IO
@@ -461,6 +505,8 @@ void DoRR()
 			p->previous = NULL;
 			addNodeC(pScheduler->list.CircularList, p);
 
+			p->AbsStartTime = cpu->Clock;
+
 			printf("Novo processo de id %d. Aguardando escalonamento.\n", p->Id);
 			p = nextp;
 			continue;
@@ -473,6 +519,7 @@ void DoRR()
 	if(pScheduler->list.CircularList->size == 0 && processList->size == 0)
 	{
 		printf("Execução finalizada.");
+		printOutput();
 		getchar();
 		exit(0);
 	}
@@ -488,7 +535,13 @@ void DoRR()
 	if(cpu->ExecProcess->ExecutingTime >= cpu->ExecProcess->ExecutionTimeNeeded)
 	{
 		printf("Processo %d terminou de executar.\n", cpu->ExecProcess->Id);
-		removeNodeC(pScheduler->list.CircularList, cpu->ExecProcess, 1);
+		removeNodeC(pScheduler->list.CircularList, cpu->ExecProcess, 0);
+
+		// Adiciona dados de output
+		cpu->ExecProcess->AbsEndTime = cpu->Clock;
+		cpu->ExecProcess->AbsExecutionTime = cpu->ExecProcess->AbsEndTime - cpu->ExecProcess->AbsStartTime;
+		addNode(outputList, cpu->ExecProcess);
+
 		SetCPUProcess(NULL);
 		return;
 	} // Entrou em IO

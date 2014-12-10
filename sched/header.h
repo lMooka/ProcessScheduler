@@ -16,6 +16,11 @@ typedef struct structProcess
 	int ExecutingTime;
 	int ExecutingQuantum;
 
+	// Informação de output
+	int AbsStartTime;
+	int AbsEndTime;
+	int AbsExecutionTime;
+
 	// Informações de Node
 	struct structProcess *next;
 	struct structProcess *previous;
@@ -76,6 +81,7 @@ void ScheduleProcesses();
 void SetCPUProcess(Process *p);
 
 void printProcesses();
+void printOutput();
 
 void Clock();
 void DoFCFS();

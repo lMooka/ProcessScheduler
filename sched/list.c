@@ -199,5 +199,9 @@ Process* newProcess()
 	p->next = NULL;
 	p->previous = NULL;	
 
+	p->AbsStartTime = 0;
+	p->AbsEndTime = 0;
+	p->AbsExecutionTime = 0;
+
 	return p;
 }
