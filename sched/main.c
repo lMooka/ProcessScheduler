@@ -80,6 +80,7 @@ void InitProgram(char* algorithm, char* inputFile, char* outputFile)
 	else
 	{
 		printf("Algoritmo incorreto.");
+		getchar();
 		exit(0);
 	}
 
@@ -293,6 +294,7 @@ void SetNextProcessReady()
 	else
 	{
 		printf("Algoritmo de escalonamento inexistente.");
+		getchar();
 		exit(0);
 	}
 }
@@ -567,36 +569,31 @@ void LoadFile(char *path)
 			}
 			else
 			{
-				fprintf(stderr, "Arquivo em formato incorreto, impossível leitura.\n");
+				fprintf(stderr, "Arquivo em formato incorreto, impossivel leitura.\n");
 				exit(1);
 				return;
 			}
 		}
-		else if(state <= 6) 
+		else if(state <= 7) 
 		{
 			if(state == 3)
 			{
-				if(c == EOF)
-				{
-					addProcess(p);
-					return;
-				}
-				else if(c == '\n')
-				{
-					state = 0;
-					addProcess(p);
-					p = newProcess();
-					continue;
-				}
-				else if(isNumeric(c))
+
+				if(isNumeric(c))
 				{
 					buf[bufCounter++] = c;
 					state++;
 					continue;
 				}
+				else if(c == ';')
+				{
+					state = 7;
+					continue;
+				}
 				else
 				{
-					fprintf(stderr, "Arquivo em formato incorreto, impossível leitura.\n");
+					fprintf(stderr, "Arquivo em formato incorreto, impossivel leitura.\n");
+					getchar();
 					exit(1);
 					return;
 				}
@@ -629,7 +626,7 @@ void LoadFile(char *path)
 				}
 				else
 				{
-					fprintf(stderr, "Arquivo em formato incorreto, impossível leitura.\n");
+					fprintf(stderr, "Arquivo em formato incorreto, impossivel leitura.\n");
 					exit(1);
 					return;
 				}
@@ -650,14 +647,29 @@ void LoadFile(char *path)
 				}
 				else
 				{
-					fprintf(stderr, "Arquivo em formato incorreto, impossível leitura.\n");
+					fprintf(stderr, "Arquivo em formato incorreto, impossivel leitura.\n");
 					exit(1);
 					return;
 				}
 			}
+			else if(state == 7)
+			{
+				if(c == EOF)
+				{
+					addProcess(p);
+					return;
+				}
+				else if(c == '\n')
+				{
+					state = 0;
+					addProcess(p);
+					p = newProcess();
+					continue;
+				}
+			}
 			else
 			{
-				fprintf(stderr, "Arquivo em formato incorreto, impossível leitura.\n");
+				fprintf(stderr, "Arquivo em formato incorreto, impossivel leitura.\n");
 				exit(1);
 				return;
 			}
